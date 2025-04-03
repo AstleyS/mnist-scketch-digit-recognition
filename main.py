@@ -1,100 +1,110 @@
-import os
-import tqdm
-
 from models import SimpleCNN
 
-# Import Pytorch
+from fastapi import FastAPI, Body, HTTPException
+from fastapi.middleware.cors import CORSMiddleware
 import torch
 import torch.nn as nn
-import torch.optim as optim
-
-# Import torchvision
-from torchvision.datasets import mnist
 import torchvision.transforms as transforms
-from torch.utils.data import DataLoader
+from PIL import Image
+import base64
+import io
+import os
+import numpy as np
+from pydantic import BaseModel
 
-import matplotlib.pyplot as plt
+app = FastAPI()
 
-print(f"PyTorch version: {torch.__version__}\nTorchvision version: {torchvision.__version__}")
+# Add CORS middleware to allow requests from your React app
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],  # Update with your frontend URL in production
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
+class PredictionRequest(BaseModel):
+    image: str
+    modelPath: str
 
-# Transform the data. Convert to tensor and normalise to [0,1]
-transform = transforms.Compose([
-    transforms.ToTensor(),
-    transforms.Normalize((0.5,), (0.5,))
-])
-
-# Load the MNIST dataset
-train_dataset = mnist.MNIST(root='./data', train=True, download=True, transform=transform)
-test_dataset = mnist.MNIST(root='./data', train=False, download=True, transform=transform)
-
-# Create data loaders
-# DataLoader is used to load the data in batches
-train_loader = DataLoader(train_dataset, batch_size=64, shuffle=True)
-test_loader = DataLoader(test_dataset, batch_size=64, shuffle=False)
-
-print(f'Training samples: {len(train_loader.dataset)}')
-print(f'Testing samples: {len(test_loader.dataset)}')
-
-
-# Loading the model
-model = SimpleCNN()
-print(model)
-
-# Define the loss function and optimizer
-criterion = nn.CrossEntropyLoss()
-optimizer = optim.Adam(model.parameters(), lr=0.001)
-
-# Check if GPU is available and move the model to GPU if it is
-device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-model.to(device)
-print(f"Using device: {device}")
-
-# Training the model
-epochs = 5
-for epoch in range(epochs):
-    model.train() # Set model to training mode
-    loss = 0.0
-    for img, label in tqdm.tqdm(train_loader):
-        img, label = img.to(device), label.to(device) # Move data to GPU if available
-
-        optimizer.zero_grad() # Zero the gradients. Clears old gradients to avoid accumulation
+# Load your trained model
+def load_model(model_path):
+    try:
+        # Check if model exists
+        if not os.path.exists(model_path):
+            raise FileNotFoundError(f"Model file not found at {model_path}")
         
-        output = model(img)
-        loss = criterion(output, label) # Compute the loss based on the output and the true labels
-        loss.backward() # Backpropagation
-        optimizer.step() # Update the weights
+        model = SimpleCNN()
+        model.load_state_dict(torch.load(model_path, map_location=torch.device('cpu')))
+        model.eval()
+        return model
+    except Exception as e:
+        # Log the error
+        print(f"Error loading model: {str(e)}")
+        return None
 
-        loss += loss.item() # Accumulate the loss
+# Image preprocessing
+def preprocess_image(image_data):
+    try:
+        # Remove the data URL prefix if present
+        if ',' in image_data:
+            image_data = image_data.split(',')[1]
+        
+        # Decode the base64 image
+        image_bytes = base64.b64decode(image_data)
+        image = Image.open(io.BytesIO(image_bytes)).convert('L')  # Convert to grayscale
+        
+        # Resize to 28x28 pixels
+        image = image.resize((28, 28))
+        
+        # Apply transformations similar to what was used during training
+        transform = transforms.Compose([
+            transforms.ToTensor(),  # Convert to tensor and scale to [0, 1]
+            transforms.Normalize((0.1307,), (0.3081,))  # Standard MNIST normalization
+        ])
+        
+        # Apply transformations and add batch dimension
+        tensor = transform(image).unsqueeze(0)
+        return tensor
+    except Exception as e:
+        # Log the error
+        print(f"Error preprocessing image: {str(e)}")
+        return None
 
-    print(f"Epoch [{epoch+1}/{epochs}], Loss: {loss/len(train_loader):.4f}", end='\r') # Print the loss for each epoch
-
-
-# Evaluate the model
-true = 0
-total = 0
-
-model.eval() # Set model to evaluation mode
-
-with torch.no_grad(): # No need to compute gradients during evaluation
-    for img, label in tqdm.tqdm(test_loader):
-        img, label = img.to(device), label.to(device)
-
-        output = model(img)
-        _, predicted = torch.max(output, 1) # Get the index of the max log-probability
-        total += label.size(0)
-        true += (predicted == label).sum().item()
-
-accuracy = (true / total) * 100
-print(f"Test accuracy: {accuracy:.2f}%")
-
-
-# Save the model
-model_dir = 'saved_models'
-
-if not os.path.exists(model_dir):
-    os.makedirs(model_dir)
+@app.post("/predict")
+async def predict(request: PredictionRequest):
+    try:
+        # Load the model
+        model = load_model(request.modelPath)
+        if model is None:
+            return {"error": "Failed to load model"}
+        
+        # Preprocess the image
+        tensor = preprocess_image(request.image)
+        if tensor is None:
+            return {"error": "Failed to preprocess image"}
+        
+        # Check if tensor has valid content
+        if torch.isnan(tensor).any() or torch.sum(tensor != 0).item() < 10:
+            return {"error": "Invalid image content"}
+        
+        # Make prediction
+        try:
+            with torch.no_grad():
+                outputs = model(tensor)
+                probabilities = torch.nn.functional.softmax(outputs, dim=1)[0]
+                prediction = torch.argmax(probabilities).item()
+                confidence = probabilities[prediction].item()
+            
+            return {"prediction": int(prediction), "confidence": float(confidence)}
+        except Exception as e:
+            print(f"Error during prediction: {str(e)}")
+            return {"error": f"Prediction failed: {str(e)}"}
     
+    except Exception as e:
+        print(f"Unexpected error: {str(e)}")
+        return {"error": str(e)}
 
-torch.save(model, f"{model_dir}/mnist_model.pth")
-print("Model saved!")
+if __name__ == "__main__":
+    import uvicorn
+    uvicorn.run(app, host="0.0.0.0", port=8000)

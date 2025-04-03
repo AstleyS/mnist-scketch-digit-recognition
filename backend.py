@@ -1,47 +1,84 @@
 from models import SimpleCNN
+
+from fastapi import FastAPI, Body
+from fastapi.middleware.cors import CORSMiddleware
 import torch
-import torch.nn.functional as F
+import torch.nn as nn
+import torchvision.transforms as transforms
+from PIL import Image
+import base64
 import io
 import numpy as np
-from PIL import Image
-from fastapi import FastAPI, UploadFile, File
-import os
-
-# Load the trained model
-model = SimpleCNN()
-model.load_state_dict(torch.load("saved_models/mnist_model.pth", weights_only=True))
-model.eval()
+from pydantic import BaseModel
 
 app = FastAPI()
 
-def preprocess_image(image):
-    image = image.convert("L").resize((28, 28))  # Convert to grayscale, resize to 28x28
-    image = np.array(image) / 255.0  # Normalize
-    image = torch.tensor(image, dtype=torch.float32).unsqueeze(0).unsqueeze(0)  # Shape (1,1,28,28)
-    return image
+# Add CORS middleware to allow requests from your React app
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],  # Update with your frontend URL in production
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
-@app.get("/predict/")
-async def predict(file: UploadFile = File(None)):  # Make file optional
+class PredictionRequest(BaseModel):
+    image: str
+    modelPath: str
+
+# Load your trained model
+def load_model(model_path):
+    model = SimpleCNN()
+    model.load_state_dict(torch.load(model_path, map_location=torch.device('cpu')))
+    model.eval()
+    return model
+
+# Image preprocessing
+def preprocess_image(image_data):
+    # Remove the data URL prefix if present
+    if ',' in image_data:
+        image_data = image_data.split(',')[1]
+    
+    # Decode the base64 image
+    image_bytes = base64.b64decode(image_data)
+    image = Image.open(io.BytesIO(image_bytes)).convert('L')  # Convert to grayscale
+    
+    # Resize to 28x28 pixels
+    image = image.resize((28, 28))
+    
+    # Apply transformations similar to what was used during training
+    transform = transforms.Compose([
+        transforms.ToTensor(),  # Convert to tensor and scale to [0, 1]
+        transforms.Normalize((0.1307,), (0.3081,))  # Standard MNIST normalization
+    ])
+    
+    # Apply transformations and add batch dimension
+    tensor = transform(image).unsqueeze(0)
+    return tensor
+
+@app.post("/predict")
+async def predict(request: PredictionRequest):
     try:
-        if file is None or file.filename == "":  # No file uploaded
-            image_path = "default_digit.png"
-            if not os.path.exists(image_path):  # Check if the file exists
-                return {"error": "Default image not found."}
-            image = Image.open(image_path)  # Load the default image
-        else:
-            image = Image.open(io.BytesIO(await file.read()))  # Load the uploaded image
-
-        # Preprocess image before passing to model
-        image_tensor = preprocess_image(image)
+        # Load the model
+        model = load_model(request.modelPath)
+        if model is None:
+            return {"error": "Failed to load model", "modelPath": request.modelPath}
         
-        # Run the model
+        # Preprocess the image
+        tensor = preprocess_image(request.image)
+        
+        # Make prediction
         with torch.no_grad():
-            output = model(image_tensor)
-            probabilities = torch.softmax(output, dim=1).numpy().tolist()[0]
-            prediction = torch.argmax(output, dim=1).item()
-
-        print(f"Prediction: {prediction}, Probabilities: {probabilities}")
-        return {"probabilities": probabilities, "prediction": prediction}
+            outputs = model(tensor)
+            probabilities = torch.nn.functional.softmax(outputs, dim=1)[0]
+            prediction = torch.argmax(probabilities).item()
+            confidence = probabilities[prediction].item()
+        
+        return {"prediction": int(prediction), "confidence": float(confidence)}
     
     except Exception as e:
-        return {"error": f"An error occurred: {str(e)}"}
+        return {"error": str(e)}
+
+if __name__ == "__main__":
+    import uvicorn
+    uvicorn.run(app, host="0.0.0.0", port=8000)
