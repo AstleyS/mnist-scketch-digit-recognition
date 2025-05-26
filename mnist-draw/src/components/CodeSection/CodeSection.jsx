@@ -1,5 +1,7 @@
 import React from 'react';
 import './CodeSection.css';
+import ArchitectureControls from '../ArchitectureControls/ArchitectureControls';
+import CodeDisplay from '../CodeDisplay/CodeDisplay';
 
 
 /*
@@ -9,10 +11,10 @@ import './CodeSection.css';
 */
 const CodeSection = ({setActiveTab}) => {
   return (
-    <>
-        <p> Code </p>
-
-    </>
+    <div className="flex flex-col lg:flex-row min-h-screen gap-6 p-6">
+      <ArchitectureControls />
+      <CodeDisplay />
+    </div>
   );
 };
 

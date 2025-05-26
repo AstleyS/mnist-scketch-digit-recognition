@@ -8,9 +8,9 @@ import './ExplanationSection.css';
   * */
 const ExplanationSection = ({setActiveTab}) => {
   return (
-    <>
-        <p> Explanation </p>
-    </>
+    <div className="max-w-4xl mx-auto p-6 bg-gray-800 rounded-lg shadow-xl text-center">
+      <p>This is the explanation section</p>
+    </div>
   );
 };
 
