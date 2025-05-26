@@ -94,8 +94,8 @@ const App = () => {
       if (result.error || result.prediction === undefined) {
         // Handle prediction failure with default prediction
         console.error('Prediction failed:', result.error || 'Unknown error');
-        setPrediction(5); // Default prediction of 5
-        setConfidence(0.2); // Low confidence
+        setPrediction(null); // Default prediction of 5
+        setConfidence(null); // Low confidence
         setIsPredictionDefault(true);
       } else {
         // Normal prediction case
