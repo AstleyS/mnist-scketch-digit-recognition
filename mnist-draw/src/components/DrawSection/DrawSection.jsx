@@ -1,17 +1,11 @@
-import React from 'react';
-import './DrawSection.css';
+import CanvasArea from '../CanvasArea/CanvasArea'
+import PredictionPanel from '../PredictionPanel/PredictionPanel'
 
-/*
-  * DrawSection component
-  * This component is responsible for rendering the draw section.
-  * It receives setActiveTab as a prop, which is not used in this component.
-*/
-const DrawSection = ({setActiveTab}) => {
+export default function DrawSection() {
   return (
-    <>
-    <p> Draw </p>
-    </>
-  );
-};
-
-export default DrawSection;
+    <div className="flex flex-col lg:flex-row min-h-screen gap-6 p-6">
+      <CanvasArea />
+      <PredictionPanel />
+    </div>
+  )
+}
