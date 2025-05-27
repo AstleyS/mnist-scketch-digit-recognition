@@ -21,7 +21,7 @@ const ExplanationSection = () => {
           </div>
 
           <div>
-            <h3 className="text-xl font-semibold mb-4 text-blue-400">How Does the "Black Box" Work?</h3>
+            <h3 className="text-xl font-semibold mb-4 text-blue-400">How does the "Black Box" Work?</h3>
             <p className="text-gray-300 mb-4">
               Deep learning models are often called <span className="font-semibold text-yellow-300">"black boxes"</span> because it's hard to see exactly how they make decisions. However, we know that each layer in the network transforms the input data—like your drawing—by detecting simple features (such as edges or curves) in early layers, and combining them into more complex shapes (like loops or straight lines) in deeper layers. By the end, the network has built up a detailed understanding of what makes each digit unique.
             </p>
