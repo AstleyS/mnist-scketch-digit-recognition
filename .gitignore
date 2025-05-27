@@ -93,3 +93,7 @@ dmypy.json
 # Windows
 Thumbs.db
 ehthumbs.db
+
+.vite
+.idea
+node_modules

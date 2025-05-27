@@ -1,5 +1,8 @@
 # MNIST Handwritten Sketch Recognition
 
+![Project Status](https://img.shields.io/badge/status-in--development-yellow)
+
+
 This is a Handwritten Digit Recognition app built with TensorFlow.js and HTML5 Canvas. It allows users to draw digits directly in the browser and see real-time predictions using a Convolutional Neural Network trained on the MNIST dataset.
 
 ## Key Features
