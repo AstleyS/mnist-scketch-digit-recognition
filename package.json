@@ -1,6 +1,6 @@
 {
-  "name": "mnist-scketch-digit-recognition",
-  "homepage": "https://astleys.github.io/mnist-scketch-digit-recognition",
+  "name": "mnist-sketch-digit-recognition",
+  "homepage": "https://astleys.github.io/mnist-sketch-digit-recognition",
   "private": true,
   "version": "0.0.0",
   "type": "module",
