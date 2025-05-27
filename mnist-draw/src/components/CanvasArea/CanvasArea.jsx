@@ -3,8 +3,7 @@ import './CanvasArea.css';
 
 import { DIMENSIONS, DRAWING_STYLES, HARDCODED_PREDICTION } from '../../const';
 
-import PredictionPanel from '../PredictionPanel/PredictionPanel';
-
+import useDigitModel from '../../hooks/useDigitModel';
 
 
 /*
@@ -13,13 +12,13 @@ import PredictionPanel from '../PredictionPanel/PredictionPanel';
   * It does not receive any props.
 */
 const CanvasArea = ({
-  prediction,
   setPrediction
 }) => {
 
   const [isDrawing, setIsDrawing] = useState(false);
   const canvasRef = useRef(null);
   const [context, setContext] = useState(null);
+  const { isModelLoaded, predictDigit } = useDigitModel();
 
   // It initializes the canvas and sets the context for drawing.  
   useEffect(() => {
@@ -75,10 +74,13 @@ const CanvasArea = ({
     setPrediction(null);
   }
 
-  const handlePrediction = () => {
-    // Placeholder for prediction logic
-    alert('Prediction logic will go here!');
-    setPrediction(HARDCODED_PREDICTION)
+  const handlePrediction = async () => {
+
+    if (!isModelLoaded) return alert('Model is not loaded yet. Please wait.');
+
+    const prediction = await predictDigit(canvasRef.current);
+    setPrediction(prediction);
+   
   }
 
   return (
@@ -110,12 +112,8 @@ const CanvasArea = ({
 
         </button>
       </div>
-
     </div>
-    
-    
     </>
-
   )
 }
 

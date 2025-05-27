@@ -6,11 +6,9 @@ export default function DrawSection() {
 
     const [prediction, setPrediction] = useState(null);
   
-
   return (
     <div className="flex flex-col lg:flex-row min-h-screen gap-6 p-6">
       <CanvasArea 
-        prediction={prediction}
         setPrediction={setPrediction}
       />
       <PredictionPanel

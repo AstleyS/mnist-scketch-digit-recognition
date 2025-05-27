@@ -1,5 +1,5 @@
 from tensorflow.keras.models import Sequential
-from tensorflow.keras.layers import Conv2D, MaxPooling2D, Flatten, Dense
+from tensorflow.keras.layers import InputLayer, Conv2D, MaxPooling2D, Flatten, Dense
 
 def simple_cnn(
     num_classes=10,
@@ -35,7 +35,8 @@ def simple_cnn(
         model (Sequential): A Keras Sequential model instance.      
     """
     model = Sequential([
-        Conv2D(conv_filters, conv_kernel_size, activation=conv_activation, input_shape=(28, 28, 1)),
+        InputLayer(input_shape=(28, 28, 1)),  # Input layer for grayscale images
+        Conv2D(conv_filters, conv_kernel_size, activation=conv_activation),
         MaxPooling2D(pool_size),
         Flatten(),
         Dense(dense_units, activation=dense_activation),
