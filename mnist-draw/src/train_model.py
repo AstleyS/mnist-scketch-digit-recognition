@@ -61,7 +61,7 @@ model.compile(
     metrics=['accuracy']
 )
 
-print(model.summary())
+model.summary()
 
 # Train the model
 model.fit(
@@ -74,17 +74,17 @@ model.fit(
 # Save the model
 try:
     
-    model.save('mnist_cnn_model.keras')
-    print("Model saved successfully.")
+    model.save('public/mnist_cnn_model.keras')
+    print("##### Model saved successfully. #####")
 
 except Exception as e:
-    print("Error saving model:", e)
+    print("##### Error saving model:", e)
 
 # Convert the model to TensorFlow.js format
 try:
 
-    tfjs.converters.save_keras_model(model, 'mnist_cnn_model_tfjs')
-    print("Model converted to TensorFlow.js format successfully.")
+    tfjs.converters.save_keras_model(model, 'public/mnist_cnn_model_tfjs')
+    print("##### Model converted to TensorFlow.js format successfully. #####")
 
 except Exception as e:
-    print("Error converting model to TensorFlow.js format:", e)
+    print(" ##### Error converting model to TensorFlow.js format:", e)

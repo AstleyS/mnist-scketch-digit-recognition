@@ -35,8 +35,8 @@ def simple_cnn(
         model (Sequential): A Keras Sequential model instance.      
     """
     model = Sequential([
-        InputLayer(input_shape=(28, 28, 1)),  # Input layer for grayscale images
-        Conv2D(conv_filters, conv_kernel_size, activation=conv_activation),
+        Conv2D(conv_filters, conv_kernel_size, activation=conv_activation, input_shape=((28, 28, 1))),
+        # Note: input_shape should be (height, width, channels), e.g., (28, 28, 1) for grayscale images
         MaxPooling2D(pool_size),
         Flatten(),
         Dense(dense_units, activation=dense_activation),
