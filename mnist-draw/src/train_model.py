@@ -74,7 +74,7 @@ model.fit(
 # Save the model
 try:
     
-    model.save('public/mnist_cnn_model.keras')
+    model.save('saved_models/mnist_cnn_model.keras')
     print("##### Model saved successfully. #####")
 
 except Exception as e:

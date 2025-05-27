@@ -1,7 +1,7 @@
 import React, { useEffect, useState, useRef } from 'react';
 import './CanvasArea.css';
 
-import { DIMENSIONS, DRAWING_STYLES, HARDCODED_PREDICTION } from '../../const';
+import { DIMENSIONS, DRAWING_STYLES } from '../../const';
 
 import useDigitModel from '../../hooks/useDigitModel';
 
@@ -53,6 +53,7 @@ const CanvasArea = ({
   const stopDrawing = () => {
     setIsDrawing(false);
     context.closePath(); // Close the path when the mouse is released
+    handlePrediction(); // Call the prediction function when drawing stops
   }
   
   const draw = (e) => {
@@ -76,7 +77,7 @@ const CanvasArea = ({
 
   const handlePrediction = async () => {
 
-    if (!isModelLoaded) return alert('Model is not loaded yet. Please wait.');
+    if (!isModelLoaded) return console('Model is not loaded yet. Please wait.');
 
     const prediction = await predictDigit(canvasRef.current);
     setPrediction(prediction);
@@ -84,37 +85,33 @@ const CanvasArea = ({
   }
 
   return (
-    <>
     <div className="flex flex-col items-center">
+      {!isModelLoaded && (
+        <div className="mb-4 text-yellow-400 font-semibold">
+          Model is loading, please wait...
+        </div>
+      )}
       <canvas
         ref={canvasRef}
-        onMouseDown={startDrawing}
-        onMouseUp={stopDrawing}
-        onMouseMove={draw}
-        className="border border-gray-600 rounded shadow-md cursor-crosshair bg-black"
+        onMouseDown={isModelLoaded ? startDrawing : undefined}
+        onMouseUp={isModelLoaded ? stopDrawing : undefined}
+        onMouseMove={isModelLoaded ? draw : undefined}
+        className={`border border-gray-600 rounded shadow-md cursor-crosshair bg-black transition-opacity duration-300 ${
+          isModelLoaded ? 'opacity-100' : 'opacity-50 pointer-events-none'
+        }`}
+        tabIndex={isModelLoaded ? 0 : -1}
       />
-      
       <div className="mt-4 flex gap-4">
         <button
           className="!bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded"
           onClick={clearCanvas}
+          disabled={!isModelLoaded}
         >
-          
           Clear
-
-        </button>
-        <button
-          className="!bg-green-500 hover:bg-green-600 text-white px-4 py-2 rounded"
-          onClick={handlePrediction}
-        >
-
-          Predict
-
         </button>
       </div>
     </div>
-    </>
-  )
+  );
 }
 
 

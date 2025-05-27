@@ -5,7 +5,7 @@ const Header = () => {
   return (
     <>
     <div className="bg-gray-800 border-b border-gray-700 p-4">
-      <h1 className="text-2xl">
+      <h1 className="text-2xl text-center">
         MNIST Sketch Recognition
       </h1>
       <p className='text-center text-gray-400 text-sm mt-2'>

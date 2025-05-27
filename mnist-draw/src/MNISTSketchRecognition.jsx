@@ -31,7 +31,7 @@ const MNISTSketchRecognition = () => {
       <div className="flex-1">
         { /* Content based on active tab */ }
         {
-          <ActiveSection setActiveTab={setActiveTab} />
+          <ActiveSection />
         }
 
       </div>
